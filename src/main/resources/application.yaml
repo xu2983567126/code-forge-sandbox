@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: code-forge-sandbox
+server:
+  port: 8090
+logging:
+  level:
+    com:
+      xly:
+        codeforgesandbox: DEBUG
+sandbox:
+  # 用户代码的工作根目录。必须落在工程目录之外（见 JavaSandboxTemplate）——
+  # 用户代码与沙箱进程同用户，工作目录在工程内就能读到本文件里的密钥。
+  workspace-root: /tmp/cf-sandbox
+  # 沙箱实现：native（宿主机直跑）| docker（每提交一个加固容器，见 SandboxFactory）
+  type: "${SANDBOX_TYPE:docker}"
+  docker:
+    # 容器内执行用的 JDK 镜像（须含 javac）；eclipse-temurin:latest 已在本地，避免运行时拉取
+    image: "${SANDBOX_DOCKER_IMAGE:eclipse-temurin:latest}"
+    # 镜像缺失时是否自动 pull。换成本地构建的私有镜像后置 false，缺失时直接报可操作错误
+    pull-if-missing: true
+    # docker 可执行文件位置（非默认 PATH 时）。空值由 ContainerPool 回退 SANDBOX_DOCKER_BIN 再回退 "docker"
+    bin: "${SANDBOX_DOCKER_BIN:}"
+  # 容器池：预热 N 个常驻容器复用，省去每次 docker run/rm 冷启动。
+  # enabled 关掉即退化为「每请求建/删容器」；size 必须与下方 max-concurrent 对齐。
+  pool:
+    enabled: true
+    size: 8
+  # 每容器资源配额（复用进池与独立模式共用），同步派生成 JVM -Xmx
+  container:
+    memory-mb: 256
+    cpu-count: 1
+  # 并发执行上限，到顶立即拒绝（见 SandboxController）
+  max-concurrent: 8
+  auth:
+    clients:
+      - access-key: code-forge-client
+        # 生产用环境变量 SANDBOX_SECRET_KEY 下发；这里的默认值只是本地兜底。
+        # 必须与判题侧 RemoteCodeSandbox.SECRET_KEY 逐字一致，只改一侧会让判题全落到 403。
+        secret-key: "${SANDBOX_SECRET_KEY:aB3dEfGhI7KlMn0pQrStUvWxYz123456}"
