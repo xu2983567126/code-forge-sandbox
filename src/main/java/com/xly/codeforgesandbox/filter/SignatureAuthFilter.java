@@ -1,6 +1,5 @@
 package com.xly.codeforgesandbox.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xly.codeforgesandbox.auth.SignUtils;
 import com.xly.codeforgesandbox.config.AuthClientProperties;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,6 @@ public class SignatureAuthFilter extends OncePerRequestFilter {
     /** nonce → 时间戳，附带惰性清理，防止 OOM */
     private final ConcurrentHashMap<String, Long> usedNonces = new ConcurrentHashMap<>();
     private final Map<String, String> secretKeyMap;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public SignatureAuthFilter(AuthClientProperties properties) {
         this.secretKeyMap = new HashMap<>();

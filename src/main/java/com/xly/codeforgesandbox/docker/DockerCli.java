@@ -9,12 +9,14 @@ import java.util.List;
 /**
  * docker CLI 薄封装。
  *
- * <p>容器通道走 docker CLI，而不是 docker-java 客户端库。库侧
- * {@code ExecStartCmd.withStdIn(...) + exec(callback)} 把标准输入当作 hijack 的
- * HTTP body（无 Content-Length、无 chunked 终止块），容器内进程读不到 EOF ——
+ * <p>所有 docker 子命令都通过本机 {@code docker} 二进制（PATH 或
+ * {@code sandbox.docker.bin} 指定）执行，不依赖任何 Java 客户端库。</p>
+ *
+ * <p>踩坑：把 {@code docker exec -i} 的标准输入当作 hijack 的 HTTP body 转发
+ * （无 Content-Length、无 chunked 终止块）时，容器内进程读不到 EOF ——
  * 凡是「读到 EOF 才结束」的读法（灌码的 {@code cat > file}、驱动的
- * {@code System.in.readAllBytes()}）都会永久阻塞，最后被超时误判成超时。
- * CLI 的 {@code -i} 在 stdin 写完后正常关闭管道，EOF 可达。</p>
+ * {@code System.in.readAllBytes()}）都会永久阻塞，最终被超时误判成超时。
+ * 本封装在 stdin 写完后正常关闭管道，EOF 可达。</p>
  *
  * <p>所有调用复用 {@link ProcessExecutor}：并发读流防管道死锁、单流采集上限、
  * 超时连子孙进程一起杀。</p>
